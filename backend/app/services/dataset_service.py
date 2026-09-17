@@ -1,14 +1,21 @@
 import os
 import cv2
 from pathlib import Path
-from typing import List, Dict, Any
-from app.config import settings
+from typing import List, Dict, Any, Optional
+from app.config import settings, BASE_DIR
 
 class DatasetService:
     """Service to scan, index, and manage user-uploaded experiment dataset videos."""
 
-    def __init__(self, dataset_dir: Path = settings.BASE_DIR / "dataset"):
-        self.dataset_dir = dataset_dir
+    def __init__(self, dataset_dir: Optional[Path] = None):
+        if dataset_dir is not None:
+            self.dataset_dir = Path(dataset_dir)
+        elif hasattr(settings, "DATASET_DIR") and settings.DATASET_DIR:
+            self.dataset_dir = Path(settings.DATASET_DIR)
+        elif hasattr(settings, "BASE_DIR") and settings.BASE_DIR:
+            self.dataset_dir = Path(settings.BASE_DIR) / "dataset"
+        else:
+            self.dataset_dir = BASE_DIR / "dataset"
 
     def list_dataset_videos(self) -> List[Dict[str, Any]]:
         if not self.dataset_dir.exists():

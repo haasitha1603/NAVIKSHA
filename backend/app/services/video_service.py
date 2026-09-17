@@ -4,7 +4,7 @@ import os
 import numpy as np
 from pathlib import Path
 from typing import Optional, Generator, Tuple
-from app.config import settings
+from app.config import settings, BASE_DIR
 
 class VideoService:
     def __init__(self, source_type: str = "sample", file_path: Optional[str] = None, camera_id: int = 0):
@@ -22,7 +22,7 @@ class VideoService:
             target_path = self.file_path
             if not target_path or not os.path.exists(target_path):
                 # Fallback to first video in dataset directory if available
-                ds_dir = settings.BASE_DIR / "dataset"
+                ds_dir = getattr(settings, "DATASET_DIR", BASE_DIR / "dataset")
                 vids = [f for f in ds_dir.iterdir() if f.suffix.lower() == ".mp4"]
                 if vids:
                     target_path = str(vids[0])
