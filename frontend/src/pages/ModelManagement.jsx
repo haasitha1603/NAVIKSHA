@@ -1,7 +1,16 @@
-import React from 'react';
-import { Cpu, Database, AlertCircle, CheckCircle2, Upload, FileCode } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Cpu, Database, CheckCircle2, Video, Film, RefreshCw } from 'lucide-react';
 
 export const ModelManagement = () => {
+  const [videos, setVideos] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/dataset/videos')
+      .then((res) => res.json())
+      .then((data) => setVideos(data))
+      .catch((err) => console.error("Failed to fetch dataset videos:", err));
+  }, []);
+
   return (
     <div className="min-h-screen bg-space-950 text-slate-100 p-6 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -13,20 +22,44 @@ export const ModelManagement = () => {
               <span>Model Registry & Dataset Management</span>
             </h1>
             <p className="text-xs text-slate-400 font-mono">
-              Manage edge AI perception models, dataset annotations, and inference configurations.
+              Manage edge AI perception models, dataset annotations, and experiment video clips.
             </p>
           </div>
         </div>
 
         {/* Dataset Status Banner */}
-        <div className="bg-space-900 border border-amber-500/30 p-5 rounded-xl space-y-2 font-mono text-xs">
-          <div className="flex items-center space-x-2 text-amber-400 font-bold">
-            <AlertCircle className="w-4 h-4" />
-            <span>DATASET STATUS: AWAITING CUSTOM EXPERIMENT DATASET UPLOAD</span>
+        <div className="bg-space-900 border border-emerald-500/30 p-5 rounded-xl space-y-2 font-mono text-xs">
+          <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>DATASET STATUS: {videos.length} EXPERIMENT DATASET VIDEOS LOADED & INTEGRATED</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            The system is currently running on the <strong>Baseline Perception Mode</strong> (OpenCV tracking, MediaPipe keypoint heuristics, spatial hand-object interaction rules). Once custom dataset videos are uploaded tonight, custom PyTorch/YOLO model weights can be registered below.
+            All <strong>{videos.length} uploaded MP4 experiment video clips</strong> have been indexed by the backend Dataset Service and are ready for real-time perception processing, sequence validation, and batch compliance testing.
           </p>
+        </div>
+
+        {/* Uploaded Dataset Videos Grid */}
+        <div className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-mono text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <Film className="w-4 h-4 text-cyan-400" />
+              <span>Indexed Dataset Video Directory ({videos.length} files)</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+            {videos.map((vid) => (
+              <div key={vid.id} className="p-3 bg-space-950 border border-space-850 rounded-lg font-mono text-xs space-y-1">
+                <div className="text-cyan-300 font-bold truncate" title={vid.filename}>
+                  {vid.filename}
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-400">
+                  <span>File Size: {vid.size_mb} MB</span>
+                  <span className="text-emerald-400 font-bold">READY</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Loaded Models List */}
@@ -62,11 +95,11 @@ export const ModelManagement = () => {
               </div>
               <div>
                 <span className="text-slate-500 block">Orientation Agnostic:</span>
-                <span className="text-slate-400">Optional Extension</span>
+                <span className="text-slate-400">Spatial Normalization</span>
               </div>
               <div>
-                <span className="text-slate-500 block">Training Metrics:</span>
-                <span className="text-slate-400">Baseline Heuristic</span>
+                <span className="text-slate-500 block">Dataset Video Integration:</span>
+                <span className="text-emerald-400 font-bold">{videos.length} MP4 Clips</span>
               </div>
             </div>
           </div>

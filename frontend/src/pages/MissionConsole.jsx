@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, AlertTriangle, CheckCircle2, ShieldAlert, Volume2, VolumeX, Download, RefreshCw, Cpu, Activity, Info, ChevronRight } from 'lucide-react';
+import { Play, Square, AlertTriangle, CheckCircle2, ShieldAlert, Volume2, VolumeX, Download, RefreshCw, Cpu, Activity, Info, ChevronRight, Video } from 'lucide-react';
 
 export const MissionConsole = () => {
   const [sessionId, setSessionId] = useState('');
   const [isRunning, setIsRunning] = useState(false);
-  const [inputSource, setInputSource] = useState('sample');
+  const [sourceCategory, setSourceCategory] = useState('sample'); // 'sample', 'camera', 'dataset'
+  const [datasetVideos, setDatasetVideos] = useState([]);
+  const [selectedDatasetVideo, setSelectedDatasetVideo] = useState('');
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   // Live Telemetry state
@@ -24,6 +26,27 @@ export const MissionConsole = () => {
   const [alerts, setAlerts] = useState([]);
   const wsRef = useRef(null);
 
+  useEffect(() => {
+    // Fetch uploaded dataset videos list
+    fetch('/api/dataset/videos')
+      .then((res) => res.json())
+      .then((data) => {
+        setDatasetVideos(data);
+        if (data.length > 0) {
+          setSelectedDatasetVideo(data[0].path);
+        }
+      })
+      .catch((err) => console.error("Failed to load dataset videos:", err));
+  }, []);
+
+  // Compute final input_source string
+  const getInputSource = () => {
+    if (sourceCategory === 'dataset' && selectedDatasetVideo) {
+      return `dataset:${selectedDatasetVideo}`;
+    }
+    return sourceCategory;
+  };
+
   // Web Speech API Local TTS
   const speakText = (text) => {
     if (!voiceEnabled || !('speechSynthesis' in window)) return;
@@ -41,13 +64,14 @@ export const MissionConsole = () => {
   // Start Session
   const startSession = async () => {
     try {
+      const activeSource = getInputSource();
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           experiment_id: 'exp-2026-color-sort',
           protocol_id: 'color-sort-rack-v1',
-          input_source: inputSource,
+          input_source: activeSource,
           model_id: 'baseline-perception-v1'
         })
       });
@@ -132,16 +156,32 @@ export const MissionConsole = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
           <select
-            value={inputSource}
-            onChange={(e) => setInputSource(e.target.value)}
+            value={sourceCategory}
+            onChange={(e) => setSourceCategory(e.target.value)}
             disabled={isRunning}
             className="bg-space-800 border border-space-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"
           >
             <option value="sample">Synthetic Rack Feed (Demo)</option>
             <option value="camera">Local Webcam</option>
+            <option value="dataset">Uploaded Experiment Videos ({datasetVideos.length})</option>
           </select>
+
+          {sourceCategory === 'dataset' && (
+            <select
+              value={selectedDatasetVideo}
+              onChange={(e) => setSelectedDatasetVideo(e.target.value)}
+              disabled={isRunning}
+              className="bg-space-800 border border-cyan-500/40 text-xs text-cyan-300 rounded-lg px-3 py-2 max-w-xs focus:outline-none"
+            >
+              {datasetVideos.map((vid) => (
+                <option key={vid.id} value={vid.path}>
+                  {vid.filename} ({vid.size_mb} MB)
+                </option>
+              ))}
+            </select>
+          )}
 
           <button
             onClick={() => setVoiceEnabled(!voiceEnabled)}
@@ -181,11 +221,11 @@ export const MissionConsole = () => {
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-2">
                 <Activity className="w-4 h-4" />
-                Live Camera Processing Feed
+                Live Video Feed ({sourceCategory === 'dataset' ? 'Dataset MP4 Video' : sourceCategory})
               </span>
               <div className="flex items-center space-x-3 text-[11px] font-mono text-slate-400">
                 <span>FPS: <strong className="text-emerald-400">{fps}</strong></span>
-                <span>Mode: <strong className="text-cyan-400">Baseline Edge</strong></span>
+                <span>Mode: <strong className="text-cyan-400">Baseline Edge AI</strong></span>
               </div>
             </div>
 
@@ -196,7 +236,7 @@ export const MissionConsole = () => {
               ) : (
                 <div className="text-center p-6 text-slate-500 font-mono text-xs">
                   <Cpu className="w-8 h-8 text-space-700 mx-auto mb-2 animate-pulse" />
-                  <p>Session Inactive. Click "Start Experiment Session" to begin live AI monitoring.</p>
+                  <p>Session Inactive. Select a video source and click "Start Experiment Session".</p>
                 </div>
               )}
 
@@ -301,7 +341,6 @@ export const MissionConsole = () => {
               </span>
             </div>
 
-            {/* Progress Bar */}
             <div className="w-full bg-space-950 h-2 rounded-full overflow-hidden mb-4 border border-space-800">
               <div
                 className="bg-cyan-400 h-full transition-all duration-500"
@@ -309,7 +348,6 @@ export const MissionConsole = () => {
               ></div>
             </div>
 
-            {/* Step list summary */}
             <div className="space-y-2 text-xs font-mono max-h-56 overflow-y-auto pr-1">
               {['Prepare Workspace', 'Identify Component', 'Reach for Component', 'Pick Up Component', 'Move Component', 'Place Component', 'Verify Placement', 'Return to Neutral', 'Complete Experiment'].map((stepName, i) => {
                 const stepNum = i + 1;

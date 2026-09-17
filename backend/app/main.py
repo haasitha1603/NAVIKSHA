@@ -91,8 +91,14 @@ async def websocket_session_endpoint(websocket: WebSocket, session_id: str):
         
         protocol = load_protocol_from_file(proto_file)
         
-        # Initialize Engines
-        video_svc = VideoService(source_type=input_source)
+        # Initialize Video Engine
+        file_path = None
+        source_type = input_source
+        if input_source.startswith("dataset:"):
+            source_type = "dataset"
+            file_path = input_source.replace("dataset:", "")
+
+        video_svc = VideoService(source_type=source_type, file_path=file_path)
         perception_eng = PerceptionEngine(model_id=sess_entity.model_id if sess_entity else "baseline-perception-v1")
         protocol_eng = ProtocolEngine(protocol=protocol, debounce_limit=2, min_confidence=0.55)
 

@@ -9,11 +9,16 @@ from app.models.database import get_db
 from app.models.entities import SessionEntity, EventEntity, AlertEntity
 from app.schemas.experiment import SessionCreateSchema, SessionResponseSchema
 from app.schemas.protocol import ProtocolSchema
+from app.services.dataset_service import dataset_service
 
 router = APIRouter()
 
 # Global session runner store
 active_sessions: Dict[str, Any] = {}
+
+@router.get("/dataset/videos")
+def get_dataset_videos():
+    return dataset_service.list_dataset_videos()
 
 @router.get("/protocols", response_model=List[Dict[str, Any]])
 def get_protocols():
@@ -25,7 +30,6 @@ def get_protocol_detail(protocol_id: str):
     for p in protocols:
         if p["protocol_id"] == protocol_id:
             return load_protocol_from_file(settings.PROTOCOLS_DIR / f"{protocol_id}.json")
-    # Fallback search
     for p_file in settings.PROTOCOLS_DIR.glob("*.*"):
         try:
             proto = load_protocol_from_file(p_file)
